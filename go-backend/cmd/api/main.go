@@ -1,5 +1,5 @@
 /*
-AngelaMos | 2025
+AngelaMos | 2026
 main.go
 */
 
@@ -13,6 +13,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 
 	"github.com/carterperez-dev/templates/go-backend/internal/config"
 	"github.com/carterperez-dev/templates/go-backend/internal/health"
@@ -43,6 +45,8 @@ func run(configPath string) error {
 		syscall.SIGTERM,
 	)
 	defer stop()
+
+	_ = godotenv.Load()
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
