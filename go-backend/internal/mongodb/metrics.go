@@ -135,3 +135,27 @@ func (r *MetricsRepository) GetCollectionCount(ctx context.Context, dbName strin
 	}
 	return len(collections), nil
 }
+
+func (r *MetricsRepository) GetTruePaidSubscribers(ctx context.Context, dbName string) (int64, error) {
+	excludedEmails := []string{
+		"daleneumeister@gmail.com",
+		"testflight@gmail.com",
+		"admin@gmail.com",
+		"brandonbaldwin1987@gmail.com",
+		"carterperez4433@gmail.com",
+	}
+
+	filter := bson.D{
+		{Key: "subscriptionStatus", Value: "active"},
+		{Key: "stripeSubscriptionId", Value: bson.D{{Key: "$regex", Value: "^sub_"}}},
+		{Key: "stripeCustomerId", Value: bson.D{{Key: "$regex", Value: "^cus_"}}},
+		{Key: "email", Value: bson.D{{Key: "$nin", Value: excludedEmails}}},
+		{Key: "tags", Value: bson.D{{Key: "$ne", Value: "PROMO"}}},
+	}
+
+	count, err := r.client.Database(dbName).Collection("mainusers").CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, fmt.Errorf("count paid subscribers: %w", err)
+	}
+	return count, nil
+}
