@@ -19,6 +19,7 @@ type metricsRepository interface {
 	GetCurrentOps(ctx context.Context) ([]mongodb.Operation, error)
 	ListDatabases(ctx context.Context) ([]string, error)
 	GetCollectionCount(ctx context.Context, dbName string) (int, error)
+	GetTruePaidSubscribers(ctx context.Context, dbName string) (int64, error)
 }
 
 type Service struct {
@@ -34,14 +35,15 @@ func NewService(repo metricsRepository, database string) *Service {
 }
 
 type DashboardMetrics struct {
-	Timestamp   time.Time       `json:"timestamp"`
-	Server      ServerMetrics   `json:"server"`
-	Database    DatabaseMetrics `json:"database"`
-	Connections ConnectionStats `json:"connections"`
-	Operations  OpCounters      `json:"operations"`
-	Memory      MemoryStats     `json:"memory"`
-	Network     NetworkStats    `json:"network"`
-	ActiveOps   int             `json:"active_ops"`
+	Timestamp       time.Time       `json:"timestamp"`
+	Server          ServerMetrics   `json:"server"`
+	Database        DatabaseMetrics `json:"database"`
+	Connections     ConnectionStats `json:"connections"`
+	Operations      OpCounters      `json:"operations"`
+	Memory          MemoryStats     `json:"memory"`
+	Network         NetworkStats    `json:"network"`
+	ActiveOps       int             `json:"active_ops"`
+	PaidSubscribers int64           `json:"paid_subscribers"`
 }
 
 type ServerMetrics struct {
@@ -109,6 +111,11 @@ func (s *Service) GetDashboardMetrics(ctx context.Context) (*DashboardMetrics, e
 		return nil, fmt.Errorf("get current ops: %w", err)
 	}
 
+	paidSubs, err := s.repo.GetTruePaidSubscribers(ctx, s.database)
+	if err != nil {
+		return nil, fmt.Errorf("get paid subscribers: %w", err)
+	}
+
 	totalOps := serverStatus.Opcounters.Insert +
 		serverStatus.Opcounters.Query +
 		serverStatus.Opcounters.Update +
@@ -156,7 +163,8 @@ func (s *Service) GetDashboardMetrics(ctx context.Context) (*DashboardMetrics, e
 			BytesOutMB:  bytesToMB(float64(serverStatus.Network.BytesOut)),
 			NumRequests: serverStatus.Network.NumRequests,
 		},
-		ActiveOps: len(activeOps),
+		ActiveOps:       len(activeOps),
+		PaidSubscribers: paidSubs,
 	}, nil
 }
 
