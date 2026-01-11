@@ -17,7 +17,9 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/carterperez-dev/templates/go-backend/internal/config"
+	"github.com/carterperez-dev/templates/go-backend/internal/handler"
 	"github.com/carterperez-dev/templates/go-backend/internal/health"
+	"github.com/carterperez-dev/templates/go-backend/internal/metrics"
 	"github.com/carterperez-dev/templates/go-backend/internal/middleware"
 	"github.com/carterperez-dev/templates/go-backend/internal/mongodb"
 	"github.com/carterperez-dev/templates/go-backend/internal/server"
@@ -81,6 +83,10 @@ func run(configPath string) error {
 
 	healthHandler := health.NewHandler(mongoClient, sqliteClient)
 
+	metricsRepo := mongodb.NewMetricsRepository(mongoClient)
+	metricsSvc := metrics.NewService(metricsRepo, cfg.Mongo.Database)
+	metricsHandler := handler.NewMetricsHandler(metricsSvc)
+
 	srv := server.New(server.Config{
 		ServerConfig:  cfg.Server,
 		HealthHandler: healthHandler,
@@ -95,6 +101,7 @@ func run(configPath string) error {
 	router.Use(middleware.CORS(cfg.CORS))
 
 	healthHandler.RegisterRoutes(router)
+	metricsHandler.RegisterRoutes(router)
 
 	errChan := make(chan error, 1)
 	go func() {
