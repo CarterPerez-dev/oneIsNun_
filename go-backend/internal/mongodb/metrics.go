@@ -136,6 +136,95 @@ func (r *MetricsRepository) GetCollectionCount(ctx context.Context, dbName strin
 	return len(collections), nil
 }
 
+type SlowQuery struct {
+	Timestamp    time.Time `bson:"ts" json:"timestamp"`
+	Op           string    `bson:"op" json:"op"`
+	Namespace    string    `bson:"ns" json:"namespace"`
+	MillisRuntime int      `bson:"millis" json:"millis"`
+	PlanSummary  string    `bson:"planSummary" json:"plan_summary"`
+	Command      bson.Raw  `bson:"command" json:"command,omitempty"`
+	Query        bson.Raw  `bson:"query" json:"query,omitempty"`
+	KeysExamined int64     `bson:"keysExamined" json:"keys_examined"`
+	DocsExamined int64     `bson:"docsExamined" json:"docs_examined"`
+	NumYields    int       `bson:"numYield" json:"num_yields"`
+	ResponseLen  int       `bson:"responseLength" json:"response_length"`
+	Client       string    `bson:"client" json:"client"`
+	User         string    `bson:"user" json:"user"`
+}
+
+type IndexSuggestion struct {
+	Collection     string   `json:"collection"`
+	SuggestedIndex []string `json:"suggested_index"`
+	Reason         string   `json:"reason"`
+	QueryPattern   string   `json:"query_pattern"`
+	Occurrences    int      `json:"occurrences"`
+}
+
+func (r *MetricsRepository) GetSlowQueries(ctx context.Context, dbName string, minMillis int, limit int) ([]SlowQuery, error) {
+	if minMillis <= 0 {
+		minMillis = 100
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+
+	coll := r.client.Database(dbName).Collection("system.profile")
+
+	filter := bson.D{
+		{Key: "millis", Value: bson.D{{Key: "$gte", Value: minMillis}}},
+	}
+
+	cursor, err := coll.Find(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("query system.profile: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var queries []SlowQuery
+	count := 0
+	for cursor.Next(ctx) && count < limit {
+		var q SlowQuery
+		if err := cursor.Decode(&q); err != nil {
+			continue
+		}
+		queries = append(queries, q)
+		count++
+	}
+
+	return queries, nil
+}
+
+func (r *MetricsRepository) GetProfilingStatus(ctx context.Context, dbName string) (int, int, error) {
+	var result struct {
+		Was      int `bson:"was"`
+		SlowMs   int `bson:"slowms"`
+	}
+
+	err := r.client.Database(dbName).RunCommand(ctx, bson.D{{"profile", -1}}).Decode(&result)
+	if err != nil {
+		return 0, 0, fmt.Errorf("get profiling status: %w", err)
+	}
+
+	return result.Was, result.SlowMs, nil
+}
+
+func (r *MetricsRepository) SetProfilingLevel(ctx context.Context, dbName string, level int, slowMs int) error {
+	cmd := bson.D{
+		{Key: "profile", Value: level},
+	}
+	if slowMs > 0 {
+		cmd = append(cmd, bson.E{Key: "slowms", Value: slowMs})
+	}
+
+	var result bson.M
+	err := r.client.Database(dbName).RunCommand(ctx, cmd).Decode(&result)
+	if err != nil {
+		return fmt.Errorf("set profiling level: %w", err)
+	}
+
+	return nil
+}
+
 func (r *MetricsRepository) GetTruePaidSubscribers(ctx context.Context, dbName string) (int64, error) {
 	excludedEmails := []string{
 		"daleneumeister@gmail.com",
