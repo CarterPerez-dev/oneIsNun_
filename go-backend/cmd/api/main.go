@@ -25,6 +25,7 @@ import (
 	"github.com/carterperez-dev/templates/go-backend/internal/mongodb"
 	"github.com/carterperez-dev/templates/go-backend/internal/server"
 	"github.com/carterperez-dev/templates/go-backend/internal/sqlite"
+	"github.com/carterperez-dev/templates/go-backend/internal/websocket"
 )
 
 const (
@@ -97,6 +98,18 @@ func run(configPath string) error {
 	collectionsRepo := mongodb.NewCollectionsRepository(mongoClient)
 	collectionsHandler := handler.NewCollectionsHandler(collectionsRepo, cfg.Mongo.Database)
 
+	wsHub := websocket.NewHub(logger)
+	go wsHub.Run(ctx)
+
+	wsHandler := websocket.NewHandler(wsHub, logger)
+
+	metricsGetter := func(ctx context.Context) (any, error) {
+		return metricsSvc.GetDashboardMetrics(ctx)
+	}
+	broadcaster := websocket.NewMetricsBroadcaster(wsHub, metricsGetter, 2000, logger)
+	broadcaster.Start(ctx)
+	logger.Info("websocket broadcaster started", "interval_ms", 2000)
+
 	srv := server.New(server.Config{
 		ServerConfig:  cfg.Server,
 		HealthHandler: healthHandler,
@@ -114,6 +127,7 @@ func run(configPath string) error {
 	metricsHandler.RegisterRoutes(router)
 	backupsHandler.RegisterRoutes(router)
 	collectionsHandler.RegisterRoutes(router)
+	router.Handle("/ws", wsHandler)
 
 	backupSvc.StartScheduler()
 	if err := backupSvc.SetupDailyBackup(cfg.Mongo.Database); err != nil {
