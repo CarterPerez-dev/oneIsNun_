@@ -1,5 +1,5 @@
 /*
-AngelaMos | 2025
+AngelaMos | 2026
 response.go
 */
 
@@ -119,4 +119,8 @@ func Paginated(w http.ResponseWriter, data any, page, pageSize, total int) {
 		Total:      total,
 		TotalPages: totalPages,
 	})
+}
+
+func DecodeJSON(r *http.Request, v any) error {
+	return json.NewDecoder(r.Body).Decode(v)
 }

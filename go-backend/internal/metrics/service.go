@@ -20,6 +20,9 @@ type metricsRepository interface {
 	ListDatabases(ctx context.Context) ([]string, error)
 	GetCollectionCount(ctx context.Context, dbName string) (int, error)
 	GetTruePaidSubscribers(ctx context.Context, dbName string) (int64, error)
+	GetSlowQueries(ctx context.Context, dbName string, minMillis int, limit int) ([]mongodb.SlowQuery, error)
+	GetProfilingStatus(ctx context.Context, dbName string) (int, int, error)
+	SetProfilingLevel(ctx context.Context, dbName string, level int, slowMs int) error
 }
 
 type Service struct {
@@ -170,4 +173,204 @@ func (s *Service) GetDashboardMetrics(ctx context.Context) (*DashboardMetrics, e
 
 func bytesToMB(bytes float64) float64 {
 	return bytes / (1024 * 1024)
+}
+
+type SlowQueryReport struct {
+	Database       string              `json:"database"`
+	ProfilingLevel int                 `json:"profiling_level"`
+	SlowMsThreshold int               `json:"slow_ms_threshold"`
+	QueryCount     int                 `json:"query_count"`
+	Queries        []mongodb.SlowQuery `json:"queries"`
+}
+
+type ProfilingStatus struct {
+	Database string `json:"database"`
+	Level    int    `json:"level"`
+	SlowMs   int    `json:"slow_ms"`
+}
+
+type IndexSuggestion struct {
+	Collection     string   `json:"collection"`
+	SuggestedIndex []string `json:"suggested_index"`
+	Reason         string   `json:"reason"`
+	QueryPattern   string   `json:"query_pattern"`
+	Occurrences    int      `json:"occurrences"`
+}
+
+type SlowQueryAnalysis struct {
+	Database         string            `json:"database"`
+	TotalQueries     int               `json:"total_queries"`
+	AnalyzedQueries  int               `json:"analyzed_queries"`
+	Suggestions      []IndexSuggestion `json:"suggestions"`
+	TopCollections   []CollectionStats `json:"top_collections"`
+	TopOperations    []OperationStats  `json:"top_operations"`
+}
+
+type CollectionStats struct {
+	Namespace    string  `json:"namespace"`
+	Count        int     `json:"count"`
+	AvgMillis    float64 `json:"avg_millis"`
+	MaxMillis    int     `json:"max_millis"`
+}
+
+type OperationStats struct {
+	Operation string `json:"operation"`
+	Count     int    `json:"count"`
+	AvgMillis float64 `json:"avg_millis"`
+}
+
+func (s *Service) GetSlowQueries(ctx context.Context, minMillis, limit int) (*SlowQueryReport, error) {
+	level, slowMs, err := s.repo.GetProfilingStatus(ctx, s.database)
+	if err != nil {
+		return nil, fmt.Errorf("get profiling status: %w", err)
+	}
+
+	queries, err := s.repo.GetSlowQueries(ctx, s.database, minMillis, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get slow queries: %w", err)
+	}
+
+	return &SlowQueryReport{
+		Database:        s.database,
+		ProfilingLevel:  level,
+		SlowMsThreshold: slowMs,
+		QueryCount:      len(queries),
+		Queries:         queries,
+	}, nil
+}
+
+func (s *Service) GetProfilingStatus(ctx context.Context) (*ProfilingStatus, error) {
+	level, slowMs, err := s.repo.GetProfilingStatus(ctx, s.database)
+	if err != nil {
+		return nil, fmt.Errorf("get profiling status: %w", err)
+	}
+
+	return &ProfilingStatus{
+		Database: s.database,
+		Level:    level,
+		SlowMs:   slowMs,
+	}, nil
+}
+
+func (s *Service) SetProfilingLevel(ctx context.Context, level, slowMs int) error {
+	if level < 0 || level > 2 {
+		return fmt.Errorf("invalid profiling level: must be 0, 1, or 2")
+	}
+
+	return s.repo.SetProfilingLevel(ctx, s.database, level, slowMs)
+}
+
+func (s *Service) AnalyzeSlowQueries(ctx context.Context, minMillis, limit int) (*SlowQueryAnalysis, error) {
+	queries, err := s.repo.GetSlowQueries(ctx, s.database, minMillis, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get slow queries: %w", err)
+	}
+
+	collectionMap := make(map[string]*collectionAggregator)
+	operationMap := make(map[string]*operationAggregator)
+	suggestionMap := make(map[string]*IndexSuggestion)
+
+	for _, q := range queries {
+		if agg, ok := collectionMap[q.Namespace]; ok {
+			agg.count++
+			agg.totalMillis += q.MillisRuntime
+			if q.MillisRuntime > agg.maxMillis {
+				agg.maxMillis = q.MillisRuntime
+			}
+		} else {
+			collectionMap[q.Namespace] = &collectionAggregator{
+				namespace:   q.Namespace,
+				count:       1,
+				totalMillis: q.MillisRuntime,
+				maxMillis:   q.MillisRuntime,
+			}
+		}
+
+		if agg, ok := operationMap[q.Op]; ok {
+			agg.count++
+			agg.totalMillis += q.MillisRuntime
+		} else {
+			operationMap[q.Op] = &operationAggregator{
+				operation:   q.Op,
+				count:       1,
+				totalMillis: q.MillisRuntime,
+			}
+		}
+
+		if q.PlanSummary == "COLLSCAN" && q.DocsExamined > 100 {
+			key := q.Namespace + ":COLLSCAN"
+			if sug, ok := suggestionMap[key]; ok {
+				sug.Occurrences++
+			} else {
+				suggestionMap[key] = &IndexSuggestion{
+					Collection:     q.Namespace,
+					SuggestedIndex: []string{"_id"},
+					Reason:         "Collection scan detected with high document examination",
+					QueryPattern:   "COLLSCAN",
+					Occurrences:    1,
+				}
+			}
+		}
+
+		if q.KeysExamined > 0 && q.DocsExamined > q.KeysExamined*10 {
+			key := q.Namespace + ":INEFFICIENT_INDEX"
+			if sug, ok := suggestionMap[key]; ok {
+				sug.Occurrences++
+			} else {
+				suggestionMap[key] = &IndexSuggestion{
+					Collection:     q.Namespace,
+					SuggestedIndex: []string{"examine query filter fields"},
+					Reason:         fmt.Sprintf("Inefficient index usage: %d docs examined vs %d keys", q.DocsExamined, q.KeysExamined),
+					QueryPattern:   q.PlanSummary,
+					Occurrences:    1,
+				}
+			}
+		}
+	}
+
+	var topCollections []CollectionStats
+	for _, agg := range collectionMap {
+		topCollections = append(topCollections, CollectionStats{
+			Namespace: agg.namespace,
+			Count:     agg.count,
+			AvgMillis: float64(agg.totalMillis) / float64(agg.count),
+			MaxMillis: agg.maxMillis,
+		})
+	}
+
+	var topOperations []OperationStats
+	for _, agg := range operationMap {
+		topOperations = append(topOperations, OperationStats{
+			Operation: agg.operation,
+			Count:     agg.count,
+			AvgMillis: float64(agg.totalMillis) / float64(agg.count),
+		})
+	}
+
+	var suggestions []IndexSuggestion
+	for _, sug := range suggestionMap {
+		suggestions = append(suggestions, *sug)
+	}
+
+	return &SlowQueryAnalysis{
+		Database:        s.database,
+		TotalQueries:    len(queries),
+		AnalyzedQueries: len(queries),
+		Suggestions:     suggestions,
+		TopCollections:  topCollections,
+		TopOperations:   topOperations,
+	}, nil
+}
+
+type collectionAggregator struct {
+	namespace   string
+	count       int
+	totalMillis int
+	maxMillis   int
+}
+
+type operationAggregator struct {
+	operation   string
+	count       int
+	totalMillis int
 }
