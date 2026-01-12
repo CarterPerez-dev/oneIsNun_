@@ -94,6 +94,9 @@ func run(configPath string) error {
 	backupSvc := backup.NewService(backupExecutor, backupScheduler, backupRepo, cfg.Backup.RetentionDays, logger)
 	backupsHandler := handler.NewBackupsHandler(backupSvc, cfg.Mongo.Database)
 
+	collectionsRepo := mongodb.NewCollectionsRepository(mongoClient)
+	collectionsHandler := handler.NewCollectionsHandler(collectionsRepo, cfg.Mongo.Database)
+
 	srv := server.New(server.Config{
 		ServerConfig:  cfg.Server,
 		HealthHandler: healthHandler,
@@ -110,6 +113,7 @@ func run(configPath string) error {
 	healthHandler.RegisterRoutes(router)
 	metricsHandler.RegisterRoutes(router)
 	backupsHandler.RegisterRoutes(router)
+	collectionsHandler.RegisterRoutes(router)
 
 	backupSvc.StartScheduler()
 	if err := backupSvc.SetupDailyBackup(cfg.Mongo.Database); err != nil {
