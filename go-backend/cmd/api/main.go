@@ -16,6 +16,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"github.com/carterperez-dev/templates/go-backend/internal/backup"
 	"github.com/carterperez-dev/templates/go-backend/internal/config"
 	"github.com/carterperez-dev/templates/go-backend/internal/handler"
 	"github.com/carterperez-dev/templates/go-backend/internal/health"
@@ -87,6 +88,12 @@ func run(configPath string) error {
 	metricsSvc := metrics.NewService(metricsRepo, cfg.Mongo.Database)
 	metricsHandler := handler.NewMetricsHandler(metricsSvc)
 
+	backupRepo := sqlite.NewBackupRepository(sqliteClient)
+	backupExecutor := backup.NewExecutor(cfg.Backup, cfg.Mongo.URI)
+	backupScheduler := backup.NewScheduler(logger)
+	backupSvc := backup.NewService(backupExecutor, backupScheduler, backupRepo, cfg.Backup.RetentionDays, logger)
+	backupsHandler := handler.NewBackupsHandler(backupSvc, cfg.Mongo.Database)
+
 	srv := server.New(server.Config{
 		ServerConfig:  cfg.Server,
 		HealthHandler: healthHandler,
@@ -102,6 +109,12 @@ func run(configPath string) error {
 
 	healthHandler.RegisterRoutes(router)
 	metricsHandler.RegisterRoutes(router)
+	backupsHandler.RegisterRoutes(router)
+
+	backupSvc.StartScheduler()
+	if err := backupSvc.SetupDailyBackup(cfg.Mongo.Database); err != nil {
+		logger.Warn("failed to setup daily backup", "error", err)
+	}
 
 	errChan := make(chan error, 1)
 	go func() {
@@ -124,6 +137,10 @@ func run(configPath string) error {
 	if err := srv.Shutdown(shutdownCtx, drainDelay); err != nil {
 		logger.Error("server shutdown error", "error", err)
 	}
+
+	schedulerCtx := backupSvc.StopScheduler()
+	<-schedulerCtx.Done()
+	logger.Info("backup scheduler stopped")
 
 	if err := mongoClient.Close(shutdownCtx); err != nil {
 		logger.Error("mongodb close error", "error", err)
