@@ -52,16 +52,16 @@ func (r *BackupRepository) Create(ctx context.Context, b *Backup) error {
 	return nil
 }
 
-func (r *BackupRepository) UpdateStatus(ctx context.Context, id, status string, sizeBytes int64, errorMsg string) error {
+func (r *BackupRepository) UpdateStatus(ctx context.Context, id, status, filePath string, sizeBytes int64, errorMsg string) error {
 	query := `
 		UPDATE backups
-		SET status = ?, size_bytes = ?, completed_at = ?, error_message = ?
+		SET status = ?, file_path = ?, size_bytes = ?, completed_at = ?, error_message = ?
 		WHERE id = ?`
 
 	completedAt := sql.NullTime{Time: time.Now(), Valid: true}
 	errMsgNull := sql.NullString{String: errorMsg, Valid: errorMsg != ""}
 
-	_, err := r.db.ExecContext(ctx, query, status, sizeBytes, completedAt, errMsgNull, id)
+	_, err := r.db.ExecContext(ctx, query, status, filePath, sizeBytes, completedAt, errMsgNull, id)
 	if err != nil {
 		return fmt.Errorf("update backup status: %w", err)
 	}

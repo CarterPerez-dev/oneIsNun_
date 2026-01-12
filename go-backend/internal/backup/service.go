@@ -18,7 +18,7 @@ import (
 
 type backupRepository interface {
 	Create(ctx context.Context, b *sqlite.Backup) error
-	UpdateStatus(ctx context.Context, id, status string, sizeBytes int64, errorMsg string) error
+	UpdateStatus(ctx context.Context, id, status, filePath string, sizeBytes int64, errorMsg string) error
 	GetByID(ctx context.Context, id string) (*sqlite.Backup, error)
 	ListRecent(ctx context.Context, limit int) ([]*sqlite.Backup, error)
 	Delete(ctx context.Context, id string) error
@@ -73,7 +73,7 @@ func (s *Service) createBackup(ctx context.Context, dbName, triggeredBy string) 
 
 	result, err := s.executor.Execute(ctx, dbName)
 	if err != nil {
-		s.repo.UpdateStatus(ctx, backup.ID, "failed", 0, err.Error())
+		s.repo.UpdateStatus(ctx, backup.ID, "failed", "", 0, err.Error())
 		return nil, fmt.Errorf("execute backup: %w", err)
 	}
 
@@ -81,7 +81,7 @@ func (s *Service) createBackup(ctx context.Context, dbName, triggeredBy string) 
 	backup.SizeBytes = result.SizeBytes
 	backup.Status = "completed"
 
-	if err := s.repo.UpdateStatus(ctx, backup.ID, "completed", result.SizeBytes, ""); err != nil {
+	if err := s.repo.UpdateStatus(ctx, backup.ID, "completed", result.FilePath, result.SizeBytes, ""); err != nil {
 		return nil, fmt.Errorf("update backup status: %w", err)
 	}
 
