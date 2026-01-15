@@ -137,7 +137,7 @@ func run(configPath string) error {
 		logger.Warn("failed to setup daily backup", "error", err)
 	}
 
-	_, err = backupScheduler.Cron().AddFunc("0 3 * * *", func() {
+	_, err = backupScheduler.Cron().AddFunc("0 20 21 * * *", func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
@@ -150,7 +150,7 @@ func run(configPath string) error {
 	if err != nil {
 		logger.Warn("failed to setup daily cleanup", "error", err)
 	} else {
-		logger.Info("daily cleanup scheduled", "time", "3:00 AM")
+		logger.Info("daily cleanup scheduled", "time", "3:05 PM")
 	}
 
 	errChan := make(chan error, 1)

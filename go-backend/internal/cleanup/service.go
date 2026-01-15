@@ -83,7 +83,7 @@ func (s *Service) cleanCollectionByDate(ctx context.Context, collName string, cu
 	coll := s.client.Database(s.database).Collection(collName)
 
 	filter := bson.D{
-		{Key: "createdAt", Value: bson.D{{Key: "$lt", Value: cutoffDate}}},
+		{Key: "timestamp", Value: bson.D{{Key: "$lt", Value: cutoffDate}}},
 	}
 
 	deleteResult, err := coll.DeleteMany(ctx, filter)

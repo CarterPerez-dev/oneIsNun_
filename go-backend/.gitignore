@@ -42,3 +42,5 @@ vendor/
 
 # Debug
 __debug_bin*
+
+*.gz
