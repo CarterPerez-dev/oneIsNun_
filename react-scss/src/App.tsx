@@ -12,11 +12,15 @@ import { queryClient } from '@/core/api'
 import { router } from '@/core/app/routers'
 import '@/core/app/toast.module.scss'
 
+function HydrateFallback(): React.ReactElement {
+  return <div style={{ background: '#1a1a1a', minHeight: '100vh' }} />
+}
+
 export default function App(): React.ReactElement {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="app">
-        <RouterProvider router={router} />
+        <RouterProvider router={router} hydrateFallbackElement={<HydrateFallback />} />
         <Toaster
           position="top-right"
           duration={2000}

@@ -1,5 +1,5 @@
 // ===================
-// © AngelaMos | 2025
+// AngelaMos | 2026
 // dashboard.module.scss
 // ===================
 
@@ -11,79 +11,64 @@
   background-color: $bg-default;
 }
 
-.container {
-  max-width: 800px;
-  margin: 0 auto;
+.loading,
+.error {
+  @include flex-center;
+  min-height: 200px;
+  font-size: $font-size-sm;
+  color: $text-light;
+}
+
+.error {
+  color: $error-default;
 }
 
 .header {
-  margin-bottom: $space-6;
-}
-
-.title {
-  font-size: $font-size-2xl;
-  font-weight: $font-weight-semibold;
-  color: $text-default;
-  margin-bottom: $space-2;
-}
-
-.subtitle {
-  font-size: $font-size-sm;
-  color: $text-lighter;
-}
-
-.userCard {
   display: flex;
-  align-items: center;
-  gap: $space-4;
-  padding: $space-5;
-  background: $bg-surface-100;
-  border: 1px solid $border-default;
-  border-radius: $radius-lg;
-  margin-bottom: $space-8;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $space-6;
+  padding-bottom: $space-4;
+  border-bottom: 1px solid $border-default;
 }
 
-.avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: $radius-full;
-  background: $bg-surface-300;
-  color: $text-default;
-  font-size: $font-size-xl;
-  font-weight: $font-weight-semibold;
-  @include flex-center;
-  flex-shrink: 0;
-}
-
-.userInfo {
+.serverInfo {
   @include flex-column;
   gap: $space-1;
-  min-width: 0;
 }
 
-.userName {
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
+.host {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
   color: $text-default;
-  @include truncate;
 }
 
-.userEmail {
+.version {
   font-size: $font-size-sm;
   color: $text-light;
-  @include truncate;
 }
 
-.userRole {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: $space-0-5 $space-2;
-  background: $bg-surface-200;
+.connectionBadge {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-1-5 $space-3;
+  background: $bg-surface-100;
+  border: 1px solid $border-default;
   border-radius: $radius-full;
-  font-size: $font-size-xs;
-  color: $text-lighter;
-  text-transform: uppercase;
-  letter-spacing: $tracking-wide;
+  font-size: $font-size-sm;
+  color: $text-light;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: $radius-full;
+  background: $text-muted;
+
+  &.live {
+    background: $success-500;
+  }
 }
 
 .section {
@@ -101,52 +86,42 @@
 
 .grid {
   display: grid;
-  gap: $space-4;
+  gap: $space-3;
+  grid-template-columns: repeat(2, 1fr);
 
-  @include breakpoint-up('md') {
+  @include breakpoint-up('sm') {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  @include breakpoint-up('lg') {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 
-.card {
-  padding: $space-4;
+.metricCard {
+  @include flex-column;
+  gap: $space-1;
+  padding: $space-3;
   background: $bg-surface-100;
   border: 1px solid $border-default;
-  border-radius: $radius-lg;
+  border-radius: $radius-md;
 }
 
-.hookName {
-  display: inline-block;
-  font-size: $font-size-sm;
+.metricLabel {
+  font-size: $font-size-xs;
   font-weight: $font-weight-medium;
+  color: $text-lighter;
+  text-transform: uppercase;
+  letter-spacing: $tracking-wide;
+}
+
+.metricValue {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
   color: $text-default;
-  background: $bg-surface-200;
-  padding: $space-1 $space-2;
-  border-radius: $radius-sm;
-  margin-bottom: $space-2;
 }
 
-.description {
-  font-size: $font-size-sm;
-  color: $text-light;
-  margin-bottom: $space-2;
-  line-height: $line-height-relaxed;
-}
-
-.file {
+.metricSub {
   font-size: $font-size-xs;
   color: $text-muted;
-  font-family: $font-mono;
-}
-
-.list {
-  @include flex-column;
-  gap: $space-2;
-  padding-left: $space-5;
-  list-style: disc;
-
-  li {
-    font-size: $font-size-sm;
-    color: $text-light;
-  }
 }
