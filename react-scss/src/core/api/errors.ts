@@ -1,7 +1,7 @@
-/**
- * ©AngelaMos | 2025
- * errors.ts
- */
+// ===================
+// AngelaMos | 2026
+// errors.ts
+// ===================
 
 import type { AxiosError } from 'axios'
 

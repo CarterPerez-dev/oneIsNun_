@@ -39,7 +39,8 @@ logs/
 *.test
 *.out
 
-# MongoDB backups (large files)
+# MongoDB
+scripts/keyfile
 *.bson
 *.gz
 backups/
@@ -54,4 +55,3 @@ data/
 # Coverage
 coverage/
 *.coverprofile
-CLAUDE.md

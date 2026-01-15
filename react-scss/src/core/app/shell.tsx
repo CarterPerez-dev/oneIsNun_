@@ -1,28 +1,35 @@
-/**
- * ©AngelaMos | 2025
- * shell.tsx
- */
+// ===================
+// AngelaMos | 2026
+// shell.tsx
+// ===================
 
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
-import { GiCardAceClubs, GiCardJoker, GiExitDoor } from 'react-icons/gi'
-import { LuChevronLeft, LuChevronRight, LuMenu, LuShield } from 'react-icons/lu'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useLogout } from '@/api/hooks'
+import {
+  LuDatabase,
+  LuHardDrive,
+  LuChevronLeft,
+  LuChevronRight,
+  LuMenu,
+  LuGauge,
+  LuSearch,
+  LuSettings,
+  LuExternalLink,
+} from 'react-icons/lu'
+import { SiMongodb } from 'react-icons/si'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ROUTES } from '@/config'
-import { useIsAdmin, useUIStore, useUser } from '@/core/lib'
+import { useUIStore } from '@/core/lib'
+import { useWebSocket } from '@/api'
 import styles from './shell.module.scss'
 
 const NAV_ITEMS = [
-  { path: ROUTES.DASHBOARD, label: 'Dashboard', icon: GiCardJoker },
-  { path: ROUTES.SETTINGS, label: 'Settings', icon: GiCardAceClubs },
+  { path: ROUTES.DASHBOARD, label: 'Dashboard', icon: LuGauge },
+  { path: ROUTES.COLLECTIONS, label: 'Collections', icon: LuDatabase },
+  { path: ROUTES.BACKUPS, label: 'Backups', icon: LuHardDrive },
+  { path: ROUTES.SLOW_QUERIES, label: 'Slow Queries', icon: LuSearch },
+  { path: ROUTES.SETTINGS, label: 'Settings', icon: LuSettings },
 ]
-
-const ADMIN_NAV_ITEM = {
-  path: ROUTES.ADMIN.USERS,
-  label: 'Admin',
-  icon: LuShield,
-}
 
 function ShellErrorFallback({ error }: { error: Error }): React.ReactElement {
   return (
@@ -37,9 +44,9 @@ function ShellLoading(): React.ReactElement {
   return <div className={styles.loading}>Loading...</div>
 }
 
-function getPageTitle(pathname: string, isAdmin: boolean): string {
-  if (isAdmin && pathname === ADMIN_NAV_ITEM.path) {
-    return ADMIN_NAV_ITEM.label
+function getPageTitle(pathname: string): string {
+  if (pathname.startsWith(ROUTES.COLLECTIONS) && pathname !== ROUTES.COLLECTIONS) {
+    return 'Collection Details'
   }
   const item = NAV_ITEMS.find((i) => i.path === pathname)
   return item?.label ?? 'Dashboard'
@@ -49,13 +56,9 @@ export function Shell(): React.ReactElement {
   const location = useLocation()
   const { sidebarOpen, sidebarCollapsed, toggleSidebar, toggleSidebarCollapsed } =
     useUIStore()
-  const { mutate: logout } = useLogout()
-  const isAdmin = useIsAdmin()
-  const user = useUser()
+  const { isConnected } = useWebSocket()
 
-  const pageTitle = getPageTitle(location.pathname, isAdmin)
-  const avatarLetter =
-    user?.full_name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'
+  const pageTitle = getPageTitle(location.pathname)
 
   return (
     <div className={styles.shell}>
@@ -63,7 +66,7 @@ export function Shell(): React.ReactElement {
         className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''} ${sidebarCollapsed ? styles.collapsed : ''}`}
       >
         <div className={styles.sidebarHeader}>
-          <span className={styles.logo}>NavBar Template</span>
+          <span className={styles.logo}>MongoDB Dashboard</span>
           <button
             type="button"
             className={styles.collapseBtn}
@@ -88,29 +91,28 @@ export function Shell(): React.ReactElement {
               <span className={styles.navLabel}>{item.label}</span>
             </NavLink>
           ))}
-          {isAdmin && (
-            <NavLink
-              to={ADMIN_NAV_ITEM.path}
-              className={({ isActive }) =>
-                `${styles.navItem} ${styles.adminItem} ${isActive ? styles.active : ''}`
-              }
-              onClick={() => sidebarOpen && toggleSidebar()}
-            >
-              <ADMIN_NAV_ITEM.icon className={styles.navIcon} />
-              <span className={styles.navLabel}>{ADMIN_NAV_ITEM.label}</span>
-            </NavLink>
-          )}
+
+          <a
+            href="http://localhost:1469"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.externalLink}
+          >
+            <SiMongodb className={styles.navIcon} />
+            <span className={styles.navLabel}>Mongo Express</span>
+            <LuExternalLink className={styles.externalIcon} />
+          </a>
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <button
-            type="button"
-            className={styles.logoutBtn}
-            onClick={() => logout()}
-          >
-            <GiExitDoor className={styles.logoutIcon} />
-            <span className={styles.logoutText}>Logout</span>
-          </button>
+          <div className={styles.connectionStatus}>
+            <span
+              className={`${styles.statusDot} ${isConnected ? styles.connected : styles.disconnected}`}
+            />
+            <span className={styles.statusText}>
+              {isConnected ? 'Live' : 'Offline'}
+            </span>
+          </div>
         </div>
       </aside>
 
@@ -141,9 +143,12 @@ export function Shell(): React.ReactElement {
           </div>
 
           <div className={styles.headerRight}>
-            <Link to={ROUTES.SETTINGS} className={styles.avatar}>
-              {avatarLetter}
-            </Link>
+            <div className={styles.wsStatus}>
+              <span
+                className={`${styles.wsDot} ${isConnected ? styles.live : ''}`}
+              />
+              {isConnected ? 'Live' : 'Polling'}
+            </div>
           </div>
         </header>
 

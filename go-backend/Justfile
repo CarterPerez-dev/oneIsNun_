@@ -62,29 +62,6 @@ migrate-status:
 migrate-create name:
     goose -dir migrations create {{name}} sql
 
-# Docker
-# ------
-
-# Start development containers
-up:
-    docker compose -f dev.compose.yml up -d
-
-# Stop development containers
-down:
-    docker compose -f dev.compose.yml down
-
-# View container logs
-logs:
-    docker compose -f dev.compose.yml logs -f
-
-# Rebuild and restart containers
-rebuild:
-    docker compose -f dev.compose.yml up -d --build
-
-# Build production image
-docker-build:
-    docker build -t go-backend:latest .
-
 # Keys
 # ----
 

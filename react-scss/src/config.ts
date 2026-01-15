@@ -1,89 +1,95 @@
 // ===================
-// © AngelaMos | 2026
+// AngelaMos | 2026
 // config.ts
 // ===================
-const API_VERSION = 'v1'
 
 export const API_ENDPOINTS = {
-  AUTH: {
-    LOGIN: `/${API_VERSION}/auth/login`,
-    REFRESH: `/${API_VERSION}/auth/refresh`,
-    LOGOUT: `/${API_VERSION}/auth/logout`,
-    LOGOUT_ALL: `/${API_VERSION}/auth/logout-all`,
-    ME: `/${API_VERSION}/auth/me`,
-    CHANGE_PASSWORD: `/${API_VERSION}/auth/change-password`,
+  HEALTH: {
+    LIVE: '/healthz',
+    READY: '/readyz',
   },
-  USERS: {
-    BASE: `/${API_VERSION}/users`,
-    BY_ID: (id: string) => `/${API_VERSION}/users/${id}`,
-    ME: `/${API_VERSION}/users/me`,
-    REGISTER: `/${API_VERSION}/users`,
+  METRICS: {
+    DASHBOARD: '/api/metrics',
+    SLOW_QUERIES: '/api/metrics/slow-queries',
+    ANALYZE: '/api/metrics/slow-queries/analyze',
+    PROFILING: '/api/metrics/profiling',
   },
-  ADMIN: {
-    USERS: {
-      LIST: `/${API_VERSION}/admin/users`,
-      CREATE: `/${API_VERSION}/admin/users`,
-      BY_ID: (id: string) => `/${API_VERSION}/admin/users/${id}`,
-      UPDATE: (id: string) => `/${API_VERSION}/admin/users/${id}`,
-      DELETE: (id: string) => `/${API_VERSION}/admin/users/${id}`,
-    },
+  BACKUPS: {
+    LIST: '/api/backups',
+    CREATE: '/api/backups',
+    BY_ID: (id: string) => `/api/backups/${id}`,
+    RESTORE: (id: string) => `/api/backups/${id}/restore`,
   },
+  COLLECTIONS: {
+    LIST: '/api/collections',
+    BY_NAME: (name: string) => `/api/collections/${name}`,
+    SCHEMA: (name: string) => `/api/collections/${name}/schema`,
+    INDEXES: (name: string) => `/api/collections/${name}/indexes`,
+    DOCUMENTS: (name: string) => `/api/collections/${name}/documents`,
+    FIELD_STATS: (name: string, field: string) =>
+      `/api/collections/${name}/fields/${field}`,
+    COUNT: (name: string) => `/api/collections/${name}/count`,
+  },
+  WEBSOCKET: '/ws',
 } as const
 
 export const QUERY_KEYS = {
-  AUTH: {
-    ALL: ['auth'] as const,
-    ME: () => [...QUERY_KEYS.AUTH.ALL, 'me'] as const,
+  METRICS: {
+    ALL: ['metrics'] as const,
+    DASHBOARD: () => [...QUERY_KEYS.METRICS.ALL, 'dashboard'] as const,
+    SLOW_QUERIES: (minMillis?: number) =>
+      [...QUERY_KEYS.METRICS.ALL, 'slow-queries', { minMillis }] as const,
+    ANALYSIS: () => [...QUERY_KEYS.METRICS.ALL, 'analysis'] as const,
+    PROFILING: () => [...QUERY_KEYS.METRICS.ALL, 'profiling'] as const,
   },
-  USERS: {
-    ALL: ['users'] as const,
-    BY_ID: (id: string) => [...QUERY_KEYS.USERS.ALL, 'detail', id] as const,
-    ME: () => [...QUERY_KEYS.USERS.ALL, 'me'] as const,
+  BACKUPS: {
+    ALL: ['backups'] as const,
+    LIST: () => [...QUERY_KEYS.BACKUPS.ALL, 'list'] as const,
+    BY_ID: (id: string) => [...QUERY_KEYS.BACKUPS.ALL, 'detail', id] as const,
   },
-  ADMIN: {
-    ALL: ['admin'] as const,
-    USERS: {
-      ALL: () => [...QUERY_KEYS.ADMIN.ALL, 'users'] as const,
-      LIST: (page: number, size: number) =>
-        [...QUERY_KEYS.ADMIN.USERS.ALL(), 'list', { page, size }] as const,
-      BY_ID: (id: string) =>
-        [...QUERY_KEYS.ADMIN.USERS.ALL(), 'detail', id] as const,
-    },
+  COLLECTIONS: {
+    ALL: ['collections'] as const,
+    LIST: () => [...QUERY_KEYS.COLLECTIONS.ALL, 'list'] as const,
+    BY_NAME: (name: string) =>
+      [...QUERY_KEYS.COLLECTIONS.ALL, 'detail', name] as const,
+    SCHEMA: (name: string) =>
+      [...QUERY_KEYS.COLLECTIONS.ALL, 'schema', name] as const,
+    INDEXES: (name: string) =>
+      [...QUERY_KEYS.COLLECTIONS.ALL, 'indexes', name] as const,
+  },
+  HEALTH: {
+    ALL: ['health'] as const,
   },
 } as const
 
 export const ROUTES = {
-  HOME: '/',
-  LOGIN: '/login',
-  REGISTER: '/register',
-  DASHBOARD: '/dashboard',
+  DASHBOARD: '/',
+  BACKUPS: '/backups',
+  COLLECTIONS: '/collections',
+  COLLECTION_DETAIL: (name: string) => `/collections/${name}`,
+  SLOW_QUERIES: '/slow-queries',
   SETTINGS: '/settings',
-  UNAUTHORIZED: '/unauthorized',
-  ADMIN: {
-    DASHBOARD: '/admin',
-    USERS: '/admin/users',
-    USER_DETAIL: (id: string) => `/admin/users/${id}`,
-  },
 } as const
 
 export const STORAGE_KEYS = {
-  AUTH: 'auth-storage',
-  UI: 'ui-storage',
+  UI: 'mongodb-dashboard-ui',
 } as const
 
 export const QUERY_CONFIG = {
   STALE_TIME: {
-    USER: 1000 * 60 * 5,
-    STATIC: Infinity,
-    FREQUENT: 1000 * 30,
+    METRICS: 1000 * 2,
+    COLLECTIONS: 1000 * 30,
+    BACKUPS: 1000 * 10,
   },
   GC_TIME: {
-    DEFAULT: 1000 * 60 * 30,
-    LONG: 1000 * 60 * 60,
+    DEFAULT: 1000 * 60 * 5,
   },
   RETRY: {
-    DEFAULT: 3,
+    DEFAULT: 2,
     NONE: 0,
+  },
+  REFETCH_INTERVAL: {
+    METRICS: 1000 * 5,
   },
 } as const
 
@@ -92,23 +98,8 @@ export const HTTP_STATUS = {
   CREATED: 201,
   NO_CONTENT: 204,
   BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
   NOT_FOUND: 404,
-  CONFLICT: 409,
-  TOO_MANY_REQUESTS: 429,
   INTERNAL_SERVER: 500,
-} as const
-
-export const PASSWORD_CONSTRAINTS = {
-  MIN_LENGTH: 8,
-  MAX_LENGTH: 128,
-} as const
-
-export const PAGINATION = {
-  DEFAULT_PAGE: 1,
-  DEFAULT_SIZE: 20,
-  MAX_SIZE: 100,
 } as const
 
 export type ApiEndpoint = typeof API_ENDPOINTS

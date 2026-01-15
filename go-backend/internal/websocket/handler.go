@@ -47,7 +47,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	h.hub.register <- client
 
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	go client.WritePump(ctx)
 	client.ReadPump(ctx)

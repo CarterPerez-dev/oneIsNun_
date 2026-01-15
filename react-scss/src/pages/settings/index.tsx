@@ -1,91 +1,140 @@
-/**
- * ©AngelaMos | 2025
- * index.tsx
- */
+// ===================
+// AngelaMos | 2026
+// settings/index.tsx
+// ===================
 
+import { useState } from 'react'
+import { LuDatabase, LuActivity, LuSave } from 'react-icons/lu'
+import { useProfilingStatus, useSetProfiling, useMetrics } from '@/api'
 import styles from './settings.module.scss'
 
-const AVAILABLE_HOOKS = [
-  {
-    name: 'useUpdateProfile()',
-    file: 'api/hooks/useUsers.ts',
-    description: 'Update user profile (full_name)',
-    endpoint: 'PATCH /api/v1/users/me',
-  },
-  {
-    name: 'useChangePassword()',
-    file: 'api/hooks/useAuth.ts',
-    description: 'Change password (current + new)',
-    endpoint: 'POST /api/v1/auth/change-password',
-  },
-]
-
-const AVAILABLE_STORES = [
-  {
-    name: 'useAuthStore()',
-    file: 'core/lib/auth.store.ts',
-    description: 'Access user state, logout, updateUser',
-  },
-  {
-    name: 'useUser()',
-    file: 'core/lib/auth.store.ts',
-    description: 'Get current user from store',
-  },
+const PROFILING_LEVELS = [
+  { value: 0, label: 'Off', description: 'No profiling' },
+  { value: 1, label: 'Slow Only', description: 'Profile queries slower than threshold' },
+  { value: 2, label: 'All', description: 'Profile all operations' },
 ]
 
 export function Component(): React.ReactElement {
+  const { data: profiling, isLoading: profilingLoading } = useProfilingStatus()
+  const { data: metrics } = useMetrics()
+  const setProfiling = useSetProfiling()
+
+  const [level, setLevel] = useState<number | null>(null)
+  const [slowMs, setSlowMs] = useState<string>('')
+
+  const currentLevel = level ?? profiling?.level ?? 0
+  const currentSlowMs = slowMs || String(profiling?.slow_ms ?? 100)
+
+  const handleSave = () => {
+    setProfiling.mutate({
+      level: currentLevel,
+      slow_ms: parseInt(currentSlowMs, 10) || 100,
+    })
+  }
+
+  const hasChanges =
+    (level !== null && level !== profiling?.level) ||
+    (slowMs !== '' && parseInt(slowMs, 10) !== profiling?.slow_ms)
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
         <div className={styles.header}>
           <h1 className={styles.title}>Settings</h1>
-          <p className={styles.subtitle}>
-            Template page — available hooks and stores for building your settings
-            UI
-          </p>
+          <p className={styles.subtitle}>Configure MongoDB dashboard settings</p>
         </div>
 
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Available Hooks</h2>
-          <div className={styles.grid}>
-            {AVAILABLE_HOOKS.map((hook) => (
-              <div key={hook.name} className={styles.card}>
-                <code className={styles.hookName}>{hook.name}</code>
-                <p className={styles.description}>{hook.description}</p>
-                <div className={styles.meta}>
-                  <span className={styles.file}>{hook.file}</span>
-                  <span className={styles.endpoint}>{hook.endpoint}</span>
-                </div>
+        {metrics && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              <LuDatabase className={styles.sectionIcon} />
+              Database Info
+            </h2>
+            <div className={styles.infoCard}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Host</span>
+                <span className={styles.infoValue}>{metrics.server.host}</span>
               </div>
-            ))}
-          </div>
-        </section>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Version</span>
+                <span className={styles.infoValue}>MongoDB {metrics.server.version}</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Database</span>
+                <span className={styles.infoValue}>{metrics.database.name}</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Collections</span>
+                <span className={styles.infoValue}>{metrics.database.collections}</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Documents</span>
+                <span className={styles.infoValue}>{metrics.database.documents.toLocaleString()}</span>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Available Stores</h2>
-          <div className={styles.grid}>
-            {AVAILABLE_STORES.map((store) => (
-              <div key={store.name} className={styles.card}>
-                <code className={styles.hookName}>{store.name}</code>
-                <p className={styles.description}>{store.description}</p>
-                <div className={styles.meta}>
-                  <span className={styles.file}>{store.file}</span>
+          <h2 className={styles.sectionTitle}>
+            <LuActivity className={styles.sectionIcon} />
+            Query Profiling
+          </h2>
+
+          {profilingLoading ? (
+            <div className={styles.loading}>Loading...</div>
+          ) : (
+            <div className={styles.profilingCard}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Profiling Level</label>
+                <div className={styles.levelOptions}>
+                  {PROFILING_LEVELS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={`${styles.levelBtn} ${currentLevel === opt.value ? styles.active : ''}`}
+                      onClick={() => setLevel(opt.value)}
+                    >
+                      <span className={styles.levelValue}>{opt.value}</span>
+                      <span className={styles.levelLabel}>{opt.label}</span>
+                      <span className={styles.levelDesc}>{opt.description}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
 
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Suggested Features</h2>
-          <ul className={styles.list}>
-            <li>Profile form (full name, avatar)</li>
-            <li>Change password form</li>
-            <li>Email preferences</li>
-            <li>Theme toggle (dark/light)</li>
-            <li>Notification settings</li>
-            <li>Delete account</li>
-          </ul>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="slowMs">
+                  Slow Query Threshold (ms)
+                </label>
+                <input
+                  id="slowMs"
+                  type="number"
+                  className={styles.input}
+                  value={currentSlowMs}
+                  onChange={(e) => setSlowMs(e.target.value)}
+                  min={0}
+                  max={10000}
+                  disabled={currentLevel === 0}
+                />
+                <span className={styles.hint}>
+                  Queries taking longer than this will be logged
+                </span>
+              </div>
+
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.saveBtn}
+                  onClick={handleSave}
+                  disabled={!hasChanges || setProfiling.isPending}
+                >
+                  <LuSave className={styles.btnIcon} />
+                  {setProfiling.isPending ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </div>

@@ -1,5 +1,5 @@
 // ===================
-// © AngelaMos | 2025
+// AngelaMos | 2026
 // settings.module.scss
 // ===================
 
@@ -9,11 +9,12 @@
   min-height: calc(100vh - 56px);
   padding: $space-6;
   background-color: $bg-default;
+  background-image: radial-gradient(circle, $border-default 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .container {
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 640px;
 }
 
 .header {
@@ -21,10 +22,10 @@
 }
 
 .title {
-  font-size: $font-size-2xl;
+  font-size: $font-size-xl;
   font-weight: $font-weight-semibold;
   color: $text-default;
-  margin-bottom: $space-2;
+  margin-bottom: $space-1;
 }
 
 .subtitle {
@@ -37,6 +38,9 @@
 }
 
 .sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
   color: $text-light;
@@ -45,65 +49,176 @@
   margin-bottom: $space-4;
 }
 
-.grid {
-  display: grid;
-  gap: $space-4;
+.sectionIcon {
+  width: 16px;
+  height: 16px;
+}
 
-  @include breakpoint-up('md') {
-    grid-template-columns: repeat(2, 1fr);
+.loading {
+  padding: $space-6;
+  text-align: center;
+  color: $text-lighter;
+  font-size: $font-size-sm;
+}
+
+.infoCard {
+  background: $bg-surface-100;
+  border: 1px solid $border-default;
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $space-3 $space-4;
+  border-bottom: 1px solid $border-muted;
+
+  &:last-child {
+    border-bottom: none;
   }
 }
 
-.card {
-  padding: $space-4;
-  background: $bg-surface-100;
-  border: 1px solid $border-default;
-  border-radius: $radius-lg;
+.infoLabel {
+  font-size: $font-size-sm;
+  color: $text-lighter;
 }
 
-.hookName {
-  display: inline-block;
+.infoValue {
+  font-size: $font-size-sm;
+  color: $text-default;
+  font-family: $font-mono;
+}
+
+.profilingCard {
+  @include flex-column;
+  gap: $space-6;
+  padding: $space-5;
+  background: $bg-surface-100;
+  border: 1px solid $border-default;
+  border-radius: $radius-md;
+}
+
+.formGroup {
+  @include flex-column;
+  gap: $space-2;
+}
+
+.label {
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
   color: $text-default;
-  background: $bg-surface-200;
-  padding: $space-1 $space-2;
-  border-radius: $radius-sm;
-  margin-bottom: $space-2;
 }
 
-.description {
-  font-size: $font-size-sm;
-  color: $text-light;
-  margin-bottom: $space-3;
-  line-height: $line-height-relaxed;
+.levelOptions {
+  display: grid;
+  gap: $space-3;
+  grid-template-columns: repeat(3, 1fr);
+
+  @include breakpoint-down('sm') {
+    grid-template-columns: 1fr;
+  }
 }
 
-.meta {
+.levelBtn {
   @include flex-column;
+  align-items: flex-start;
   gap: $space-1;
+  padding: $space-4;
+  background: $bg-surface-200;
+  border: 1px solid $border-default;
+  border-radius: $radius-md;
+  text-align: left;
+  @include transition-fast;
+
+  @include hover {
+    border-color: $border-strong;
+  }
+
+  &.active {
+    border-color: $text-lighter;
+    background: $bg-surface-300;
+  }
 }
 
-.file {
-  font-size: $font-size-xs;
-  color: $text-lighter;
-  font-family: $font-mono;
+.levelValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $text-default;
 }
 
-.endpoint {
+.levelLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $text-light;
+}
+
+.levelDesc {
   font-size: $font-size-xs;
   color: $text-muted;
-  font-family: $font-mono;
 }
 
-.list {
-  @include flex-column;
-  gap: $space-2;
-  padding-left: $space-5;
-  list-style: disc;
+.input {
+  padding: $space-2-5 $space-3;
+  background: $bg-control;
+  border: 1px solid $border-strong;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  color: $text-default;
+  width: 100%;
+  max-width: 200px;
+  @include transition-fast;
 
-  li {
-    font-size: $font-size-sm;
-    color: $text-light;
+  &:focus {
+    outline: none;
+    border-color: $text-lighter;
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.hint {
+  font-size: $font-size-xs;
+  color: $text-muted;
+}
+
+.actions {
+  padding-top: $space-4;
+  border-top: 1px solid $border-muted;
+}
+
+.saveBtn {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2-5 $space-4;
+  background: $bg-surface-200;
+  border: 1px solid $border-strong;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $text-default;
+  @include transition-fast;
+
+  @include hover {
+    background: $bg-surface-300;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btnIcon {
+  width: 16px;
+  height: 16px;
 }

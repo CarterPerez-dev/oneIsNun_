@@ -107,10 +107,48 @@ $header-height: 56px;
   width: 17px;
   height: 17px;
   flex-shrink: 0;
+  color: $success-400;
 }
 
 .navLabel {
   @include transition-fast;
+
+  .sidebar.collapsed & {
+    display: none;
+  }
+}
+
+.externalLink {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  color: $text-light;
+  @include transition-fast;
+  margin-top: $space-2;
+  border-top: 1px solid $border-muted;
+  padding-top: $space-3;
+
+  @include hover {
+    background: $bg-surface-200;
+    color: $text-default;
+  }
+
+  .sidebar.collapsed & {
+    justify-content: center;
+    border-top: none;
+    margin-top: 0;
+    padding-top: $space-2;
+  }
+}
+
+.externalIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-left: auto;
 
   .sidebar.collapsed & {
     display: none;
@@ -149,6 +187,41 @@ $header-height: 56px;
 .sidebarFooter {
   padding: $space-3;
   border-top: 1px solid $border-default;
+}
+
+.connectionStatus {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2;
+
+  .sidebar.collapsed & {
+    justify-content: center;
+  }
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: $radius-full;
+  flex-shrink: 0;
+
+  &.connected {
+    background: $success-500;
+  }
+
+  &.disconnected {
+    background: $text-muted;
+  }
+}
+
+.statusText {
+  font-size: $font-size-xs;
+  color: $text-lighter;
+
+  .sidebar.collapsed & {
+    display: none;
+  }
 }
 
 .logoutBtn {
@@ -277,6 +350,25 @@ $header-height: 56px;
   display: flex;
   align-items: center;
   gap: $space-3;
+}
+
+.wsStatus {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: $font-size-xs;
+  color: $text-lighter;
+}
+
+.wsDot {
+  width: 6px;
+  height: 6px;
+  border-radius: $radius-full;
+  background: $text-muted;
+
+  &.live {
+    background: $success-500;
+  }
 }
 
 .avatar {

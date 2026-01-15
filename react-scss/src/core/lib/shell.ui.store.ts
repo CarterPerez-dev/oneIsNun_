@@ -1,7 +1,7 @@
-/**
- * ©AngelaMos | 2025
- * ui.store.ts
- */
+// ===================
+// AngelaMos | 2026
+// ui.store.ts
+// ===================
 
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'

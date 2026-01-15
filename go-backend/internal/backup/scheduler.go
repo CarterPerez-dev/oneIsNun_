@@ -90,3 +90,7 @@ func (s *Scheduler) ListJobs() []string {
 	}
 	return ids
 }
+
+func (s *Scheduler) Cron() *cron.Cron {
+	return s.cron
+}
