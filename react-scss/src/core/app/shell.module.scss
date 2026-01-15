@@ -118,6 +118,43 @@ $header-height: 56px;
   }
 }
 
+.externalLink {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  color: $text-light;
+  @include transition-fast;
+  margin-top: $space-2;
+  border-top: 1px solid $border-muted;
+  padding-top: $space-3;
+
+  @include hover {
+    background: $bg-surface-200;
+    color: $text-default;
+  }
+
+  .sidebar.collapsed & {
+    justify-content: center;
+    border-top: none;
+    margin-top: 0;
+    padding-top: $space-2;
+  }
+}
+
+.externalIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-left: auto;
+
+  .sidebar.collapsed & {
+    display: none;
+  }
+}
+
 .adminItem {
   margin-top: auto;
   border-top: 1px solid $border-default;

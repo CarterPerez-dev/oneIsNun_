@@ -14,7 +14,9 @@ import {
   LuGauge,
   LuSearch,
   LuSettings,
+  LuExternalLink,
 } from 'react-icons/lu'
+import { SiMongodb } from 'react-icons/si'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ROUTES } from '@/config'
 import { useUIStore } from '@/core/lib'
@@ -89,6 +91,17 @@ export function Shell(): React.ReactElement {
               <span className={styles.navLabel}>{item.label}</span>
             </NavLink>
           ))}
+
+          <a
+            href="http://localhost:1469"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.externalLink}
+          >
+            <SiMongodb className={styles.navIcon} />
+            <span className={styles.navLabel}>Mongo Express</span>
+            <LuExternalLink className={styles.externalIcon} />
+          </a>
         </nav>
 
         <div className={styles.sidebarFooter}>
