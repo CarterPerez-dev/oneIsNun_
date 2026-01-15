@@ -9,6 +9,8 @@
   min-height: calc(100vh - 56px);
   padding: $space-6;
   background-color: $bg-default;
+  background-image: radial-gradient(circle, $border-default 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .loading,
@@ -40,7 +42,7 @@
 
 .subtitle {
   font-size: $font-size-sm;
-  color: $text-lighter;
+  color: $success-400;
 }
 
 .empty {
@@ -108,7 +110,7 @@
 .cardIcon {
   width: 18px;
   height: 18px;
-  color: $text-lighter;
+  color: $success-400;
   flex-shrink: 0;
 }
 
@@ -145,7 +147,7 @@
 .statValue {
   font-size: $font-size-base;
   font-weight: $font-weight-semibold;
-  color: $text-default;
+  color: $success-400;
 }
 
 .statLabel {

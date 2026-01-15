@@ -9,6 +9,8 @@
   min-height: calc(100vh - 56px);
   padding: $space-6;
   background-color: $bg-default;
+  background-image: radial-gradient(circle, $border-default 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .loading {

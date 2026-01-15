@@ -9,6 +9,8 @@
   min-height: calc(100vh - 56px);
   padding: $space-6;
   background-color: $bg-default;
+  background-image: radial-gradient(circle, $border-default 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .loading,
@@ -45,7 +47,7 @@
 
 .version {
   font-size: $font-size-sm;
-  color: $text-light;
+  color: $success-400;
 }
 
 .connectionBadge {
@@ -119,11 +121,19 @@
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $text-default;
+
+  &.highlight {
+    color: $success-400;
+  }
 }
 
 .metricSub {
   font-size: $font-size-xs;
   color: $text-muted;
+
+  &.highlight {
+    color: $success-400;
+  }
 }
 
 .opsTable {

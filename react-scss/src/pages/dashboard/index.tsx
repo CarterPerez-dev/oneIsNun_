@@ -26,16 +26,18 @@ function MetricCard({
   label,
   value,
   subValue,
+  highlight = false,
 }: {
   label: string
   value: string | number
   subValue?: string
+  highlight?: boolean
 }): React.ReactElement {
   return (
     <div className={styles.metricCard}>
       <span className={styles.metricLabel}>{label}</span>
-      <span className={styles.metricValue}>{value}</span>
-      {subValue && <span className={styles.metricSub}>{subValue}</span>}
+      <span className={`${styles.metricValue} ${highlight ? styles.highlight : ''}`}>{value}</span>
+      {subValue && <span className={`${styles.metricSub} ${highlight ? styles.highlight : ''}`}>{subValue}</span>}
     </div>
   )
 }
@@ -85,10 +87,12 @@ export function Component(): React.ReactElement {
           <MetricCard
             label="Active Ops"
             value={metrics.active_ops}
+            highlight
           />
           <MetricCard
             label="Paid Subscribers"
             value={metrics.paid_subscribers}
+            highlight
           />
         </div>
       </section>
@@ -131,10 +135,12 @@ export function Component(): React.ReactElement {
           <MetricCard
             label="Collections"
             value={metrics.database.collections}
+            highlight
           />
           <MetricCard
             label="Documents"
             value={metrics.database.documents.toLocaleString()}
+            highlight
           />
           <MetricCard
             label="Data Size"
@@ -152,6 +158,7 @@ export function Component(): React.ReactElement {
           <MetricCard
             label="Total Databases"
             value={metrics.database.total_databases}
+            highlight
           />
         </div>
       </section>
