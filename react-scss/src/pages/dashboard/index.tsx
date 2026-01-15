@@ -93,6 +93,38 @@ export function Component(): React.ReactElement {
         </div>
       </section>
 
+      {metrics.current_ops.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Current Operations ({metrics.current_ops.length})</h2>
+          <div className={styles.opsTable}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Collection</th>
+                  <th>Type</th>
+                  <th>Speed</th>
+                  <th>Client</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.current_ops.map((op) => (
+                  <tr key={op.opid}>
+                    <td className={styles.collection}>{op.collection || op.namespace}</td>
+                    <td className={styles.opType}>{op.type}</td>
+                    <td className={styles.speed}>
+                      {op.millis_running < 1
+                        ? `${op.microsecs_running}µs`
+                        : `${op.millis_running.toFixed(2)}ms`}
+                    </td>
+                    <td className={styles.client}>{op.client}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Database: {metrics.database.name}</h2>
         <div className={styles.grid}>

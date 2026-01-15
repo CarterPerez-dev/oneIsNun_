@@ -49,6 +49,16 @@ export const NetworkStatsSchema = z.object({
   num_requests: z.number(),
 })
 
+export const CurrentOperationSchema = z.object({
+  opid: z.number(),
+  type: z.string(),
+  namespace: z.string(),
+  collection: z.string(),
+  microsecs_running: z.number(),
+  millis_running: z.number(),
+  client: z.string(),
+})
+
 export const DashboardMetricsSchema = z.object({
   timestamp: z.string(),
   server: ServerMetricsSchema,
@@ -58,6 +68,7 @@ export const DashboardMetricsSchema = z.object({
   memory: MemoryStatsSchema,
   network: NetworkStatsSchema,
   active_ops: z.number(),
+  current_ops: z.array(CurrentOperationSchema),
   paid_subscribers: z.number(),
 })
 
@@ -132,6 +143,7 @@ export type ConnectionStats = z.infer<typeof ConnectionStatsSchema>
 export type OpCounters = z.infer<typeof OpCountersSchema>
 export type MemoryStats = z.infer<typeof MemoryStatsSchema>
 export type NetworkStats = z.infer<typeof NetworkStatsSchema>
+export type CurrentOperation = z.infer<typeof CurrentOperationSchema>
 export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>
 export type SlowQuery = z.infer<typeof SlowQuerySchema>
 export type SlowQueryReport = z.infer<typeof SlowQueryReportSchema>

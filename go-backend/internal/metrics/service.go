@@ -38,15 +38,26 @@ func NewService(repo metricsRepository, database string) *Service {
 }
 
 type DashboardMetrics struct {
-	Timestamp       time.Time       `json:"timestamp"`
-	Server          ServerMetrics   `json:"server"`
-	Database        DatabaseMetrics `json:"database"`
-	Connections     ConnectionStats `json:"connections"`
-	Operations      OpCounters      `json:"operations"`
-	Memory          MemoryStats     `json:"memory"`
-	Network         NetworkStats    `json:"network"`
-	ActiveOps       int             `json:"active_ops"`
-	PaidSubscribers int64           `json:"paid_subscribers"`
+	Timestamp       time.Time          `json:"timestamp"`
+	Server          ServerMetrics      `json:"server"`
+	Database        DatabaseMetrics    `json:"database"`
+	Connections     ConnectionStats    `json:"connections"`
+	Operations      OpCounters         `json:"operations"`
+	Memory          MemoryStats        `json:"memory"`
+	Network         NetworkStats       `json:"network"`
+	ActiveOps       int                `json:"active_ops"`
+	CurrentOps      []CurrentOperation `json:"current_ops"`
+	PaidSubscribers int64              `json:"paid_subscribers"`
+}
+
+type CurrentOperation struct {
+	OpID             int     `json:"opid"`
+	Type             string  `json:"type"`
+	Namespace        string  `json:"namespace"`
+	Collection       string  `json:"collection"`
+	MicrosecsRunning int64   `json:"microsecs_running"`
+	MillisRunning    float64 `json:"millis_running"`
+	Client           string  `json:"client"`
 }
 
 type ServerMetrics struct {
@@ -126,6 +137,20 @@ func (s *Service) GetDashboardMetrics(ctx context.Context) (*DashboardMetrics, e
 		serverStatus.Opcounters.Getmore +
 		serverStatus.Opcounters.Command
 
+	currentOps := make([]CurrentOperation, 0, len(activeOps))
+	for _, op := range activeOps {
+		collection := extractCollection(op.Namespace)
+		currentOps = append(currentOps, CurrentOperation{
+			OpID:             op.OpID,
+			Type:             op.Op,
+			Namespace:        op.Namespace,
+			Collection:       collection,
+			MicrosecsRunning: op.MicrosecsRunning,
+			MillisRunning:    float64(op.MicrosecsRunning) / 1000.0,
+			Client:           op.Client,
+		})
+	}
+
 	return &DashboardMetrics{
 		Timestamp: time.Now(),
 		Server: ServerMetrics{
@@ -167,12 +192,28 @@ func (s *Service) GetDashboardMetrics(ctx context.Context) (*DashboardMetrics, e
 			NumRequests: serverStatus.Network.NumRequests,
 		},
 		ActiveOps:       len(activeOps),
+		CurrentOps:      currentOps,
 		PaidSubscribers: paidSubs,
 	}, nil
 }
 
 func bytesToMB(bytes float64) float64 {
 	return bytes / (1024 * 1024)
+}
+
+func extractCollection(namespace string) string {
+	if namespace == "" {
+		return ""
+	}
+	for i := 0; i < len(namespace); i++ {
+		if namespace[i] == '.' {
+			if i+1 < len(namespace) {
+				return namespace[i+1:]
+			}
+			return ""
+		}
+	}
+	return namespace
 }
 
 type SlowQueryReport struct {
