@@ -17,6 +17,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/carterperez-dev/templates/go-backend/internal/backup"
+	"github.com/carterperez-dev/templates/go-backend/internal/cleanup"
 	"github.com/carterperez-dev/templates/go-backend/internal/config"
 	"github.com/carterperez-dev/templates/go-backend/internal/handler"
 	"github.com/carterperez-dev/templates/go-backend/internal/health"
@@ -98,6 +99,8 @@ func run(configPath string) error {
 	collectionsRepo := mongodb.NewCollectionsRepository(mongoClient)
 	collectionsHandler := handler.NewCollectionsHandler(collectionsRepo, cfg.Mongo.Database)
 
+	cleanupSvc := cleanup.NewService(mongoClient.Client(), cfg.Mongo.Database, 30, logger)
+
 	wsHub := websocket.NewHub(logger)
 	go wsHub.Run(ctx)
 
@@ -132,6 +135,22 @@ func run(configPath string) error {
 	backupSvc.StartScheduler()
 	if err := backupSvc.SetupDailyBackup(cfg.Mongo.Database); err != nil {
 		logger.Warn("failed to setup daily backup", "error", err)
+	}
+
+	_, err = backupScheduler.Cron().AddFunc("0 3 * * *", func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+
+		logger.Info("starting scheduled cleanup task")
+		_, cleanupErr := cleanupSvc.CleanOldDocuments(cleanupCtx)
+		if cleanupErr != nil {
+			logger.Error("scheduled cleanup failed", "error", cleanupErr)
+		}
+	})
+	if err != nil {
+		logger.Warn("failed to setup daily cleanup", "error", err)
+	} else {
+		logger.Info("daily cleanup scheduled", "time", "3:00 AM")
 	}
 
 	errChan := make(chan error, 1)
