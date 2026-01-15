@@ -6,7 +6,7 @@
 import { z } from 'zod'
 
 export const BackupStatusSchema = z.enum(['pending', 'running', 'completed', 'failed'])
-export const BackupTriggerSchema = z.enum(['manual', 'scheduled'])
+export const BackupTriggerSchema = z.string()
 
 export const BackupSchema = z.object({
   id: z.string(),
@@ -20,10 +20,7 @@ export const BackupSchema = z.object({
   triggered_by: BackupTriggerSchema,
 })
 
-export const BackupListResponseSchema = z.object({
-  backups: z.array(BackupSchema),
-  total: z.number(),
-})
+export const BackupListResponseSchema = z.array(BackupSchema)
 
 export const CreateBackupRequestSchema = z.object({
   database: z.string(),
